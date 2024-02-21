@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"log/slog"
 	"net/http"
 
@@ -21,9 +22,24 @@ func main() {
 	app.GET("/getname", getName("scq"))
 	app.GET("/json", p_list())
 
+	// other middle will work on router below
+	sec_group := app.Group("/sec")
+	sec_group.Use(gin.BasicAuth(gin.Accounts{
+		"user01": "PasSw0rd!",
+	}))
+	sec_group.GET("/info", some_sec_info())
+
 	// main run
 	if err := app.Run(); err != nil {
-		panic(err)
+		log.Fatal(err)
+	}
+}
+
+func some_sec_info() func(*gin.Context) {
+	return func(ctx *gin.Context) {
+		ctx.JSON(200, gin.H{
+			"msg": "you should learn rust",
+		})
 	}
 }
 
