@@ -6,10 +6,19 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/chanqings/gin-web/middle"
+	"github.com/changqings/gin-web/handle_metrics"
+	"github.com/changqings/gin-web/middle"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+)
+
+var (
+	tencent_api_id     = ""
+	tencent_api_secert = ""
 )
 
 func main() {
@@ -31,6 +40,40 @@ func main() {
 		"user01": "PasSw0rd!",
 	}))
 	sec_group.GET("/info", some_sec_info())
+
+	// metrics usage
+	cm := &handle_metrics.ClbMetrics{
+		ID:          "lb-xxx",
+		Port:        "443",
+		Protocol:    "tcp",
+		MetricsName: "ClientAccIntraffic",
+	}
+
+	///
+	// set prometehsu gauge
+	cm.PrometheusMetrics = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: "clb",
+			Name:      "client_acc_intraffic",
+			Help:      "A gauage of clb in duation of 60s.",
+		})
+
+	// set tecent monitor client and request
+	err := cm.SetMonitorClientAndRequest(tencent_api_id, tencent_api_secert)
+	if err != nil {
+		slog.Error("get monitor client", "msg", err)
+		return
+	}
+
+	// registry prometheus metrics
+	prometheus.Unregister(collectors.NewGoCollector())
+	prometheus.Unregister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+	prometheus.MustRegister(cm.PrometheusMetrics)
+
+	// watching, every 60s update value
+	go cm.WatchMetricsValue()
+	app.GET("/clb_metrics", handle_metrics.AdaptHttpHandler(promhttp.Handler()))
+	///
 
 	// main run
 	if err := app.Run("127.0.0.1:8080"); err != nil {
