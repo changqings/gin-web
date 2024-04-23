@@ -14,7 +14,7 @@ var mutex sync.Mutex
 // should be as close as request begin
 func Limiter(interval time.Duration) gin.HandlerFunc {
 
-	// !!notice, if ts define here, it will only be exec once
+	// !!notice, if now define here, it will only be exec once
 	return func(ctx *gin.Context) {
 		mutex.Lock()
 		// time from 1970 second
