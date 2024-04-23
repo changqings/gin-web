@@ -120,7 +120,7 @@ func (cm *ClbMetrics) SetMetricsValue() {
 func (cm *ClbMetrics) WatchMetricsValue() {
 	cm.SetMetricsValue()
 
-	tk := time.NewTicker(time.Second * time.Duration(3))
+	tk := time.NewTicker(time.Second * time.Duration(60))
 	defer tk.Stop()
 
 	for range tk.C {
