@@ -4,6 +4,9 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
+	"time"
+
+	"github.com/chanqings/gin-web/middle"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -16,7 +19,7 @@ func main() {
 	app := gin.Default()
 
 	// middleware
-	app.Use(cors.Default(), middle_01(), middle_02(), middle_03())
+	app.Use(cors.Default(), middle.Limiter(1*time.Second), middle_01(), middle_02(), middle_03())
 
 	// routers
 	app.GET("/getname", getName("scq"))
@@ -30,7 +33,7 @@ func main() {
 	sec_group.GET("/info", some_sec_info())
 
 	// main run
-	if err := app.Run(); err != nil {
+	if err := app.Run("127.0.0.1:8080"); err != nil {
 		log.Fatal(err)
 	}
 }
