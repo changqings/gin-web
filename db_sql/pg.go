@@ -102,7 +102,7 @@ func (p *PgClient) Insert() gin.HandlerFunc {
 		net, err1 := strconv.ParseBool(net_str)
 
 		if len(name) == 0 || err != nil || err1 != nil {
-			ctx.AbortWithError(478, errors.Join(err, err1))
+			ctx.AbortWithError(479, errors.Join(err, err1))
 			return
 		}
 
@@ -117,7 +117,7 @@ func (p *PgClient) Insert() gin.HandlerFunc {
 		// fmt.Printf("debug insert: %v\n", r.RowsAffected)
 
 		if r.Error != nil {
-			ctx.AbortWithError(478, r.Error)
+			ctx.AbortWithError(479, r.Error)
 			return
 		}
 
@@ -168,7 +168,7 @@ func (p *PgClient) Update() gin.HandlerFunc {
 
 		r := p.DB.Model(&PersonRoom{}).Where("name = ?", pr.Name).Updates(pr)
 		if r.Error != nil {
-			ctx.AbortWithError(404, r.Error)
+			ctx.AbortWithError(480, r.Error)
 			return
 		}
 		ctx.JSON(http.StatusOK, pr)
@@ -183,13 +183,13 @@ func (p *PgClient) Delete() gin.HandlerFunc {
 
 		name := ctx.Query("name")
 		if len(name) == 0 {
-			ctx.AbortWithStatusJSON(491, gin.H{"errorMsg": "query params.name must have value."})
+			ctx.AbortWithStatusJSON(481, gin.H{"errorMsg": "query params.name must have value."})
 			return
 		}
 
 		r := p.DB.Where("name = ?", name).Delete(&PersonRoom{})
 		if r.Error != nil {
-			ctx.AbortWithError(491, r.Error)
+			ctx.AbortWithError(481, r.Error)
 			return
 		}
 		ctx.JSON(http.StatusOK, gin.H{"msg": "name = " + name + " deleted."})
