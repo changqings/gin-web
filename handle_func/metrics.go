@@ -1,4 +1,4 @@
-package handle_metrics
+package handle_func
 
 import (
 	"fmt"

@@ -13,3 +13,33 @@
 
 - 请求 tencent monitor 的接口，获取数据并生成 prometheus 指标，可以基于此指标进行一些活动，比如`keda`
 - prometheus metrics 使用了 time.Ticker 在后台定期更新，与用户访问就触发访问 tencent api 解耦
+
+## db_sql
+
+- 使用 init()函数中的 autoMigrate()方法，创建表，并初始化一个\*gorm.DB 连接，可全局使用
+- 使用 struct tag 创建及限制表字段，并继承了 gorm.Model，可以设置的标签值可在官网查询，可以设置外键，主键，非空等
+- 为结构体创建方法，使用指针接收者方法，传递了\*gorm.DB，方便处理 db 请求，通过返回 gin.handlerFunc,以注册到 gin 接口方法
+
+## 代码结构
+
+```yaml
+- db_sql/
+- handle_func/
+- middle/
+- routers/
+./go.mod
+./main.go
+```
+
+## pg run on docker
+
+```bash
+mkdir -p /data/pg
+docker run -d --name pg \
+  --restart=always \
+  -e POSTGRES_PASSWORD="xxx" \
+  -p 5432:5432 \
+  -e PGDATA=/var/lib/postgresql/data/pgdata \
+  -v /data/pg:/var/lib/postgresql/data \
+  postgres:16.2-bookworm
+```
