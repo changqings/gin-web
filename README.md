@@ -23,10 +23,10 @@
 ## 代码结构
 
 ```yaml
-- db_sql/
-- handle_func/
+- db/
+- handle/
 - middle/
-- routers/
+- router/
 ./go.mod
 ./main.go
 ```
