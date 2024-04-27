@@ -1,13 +1,13 @@
-package routers
+package router
 
 import (
-	"github.com/changqings/gin-web/db_sql"
+	"github.com/changqings/gin-web/db"
 	"github.com/gin-gonic/gin"
 )
 
 func PgRouters(app *gin.Engine) {
 
-	pg := db_sql.PgClient{DB: db_sql.PG_CLIENT}
+	pg := db.PgClient{DB: db.PG_CLIENT}
 
 	pgGroup := app.Group("/pg")
 	pgGroup.PUT("/insert", pg.Insert())

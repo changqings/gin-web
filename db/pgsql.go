@@ -1,4 +1,4 @@
-package db_sql
+package db
 
 import (
 	"errors"
@@ -24,12 +24,13 @@ type PersonRoom struct {
 	Owner  string `json:"owner"`
 	Size   int    `json:"size"`
 	HasNet bool   `gorm:"default:false" json:"net"`
-	// HomeThings []HomeThing `gorm:"embedded;embeddedPrefix:home_thing_"`
 }
 
 type HomeThing struct {
-	Name  string
-	Price float64
+	gorm.Model
+	Name   string
+	Price  float64
+	RoomID uint
 }
 
 type PgClient struct {
@@ -38,6 +39,9 @@ type PgClient struct {
 
 func init() {
 	PG_CLIENT = GetPgClient()
+	if err := PG_CLIENT.AutoMigrate(&HomeThing{}); err != nil {
+		slog.Error("auto migrate &HomeThing{}", "msg", err)
+	}
 	if err := PG_CLIENT.AutoMigrate(&PersonRoom{}); err != nil {
 		slog.Error("auto migrate &personRoom{}", "msg", err)
 	}
@@ -96,6 +100,7 @@ func (p *PgClient) Insert() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 
 		size_str := ctx.Query("size")
+
 		net_str := ctx.Query("net")
 		name := ctx.Query("name")
 		size, err := strconv.ParseUint(size_str, 10, 64)

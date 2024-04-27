@@ -1,9 +1,10 @@
-package routers
+package router
 
 import (
 	"log/slog"
 
-	"github.com/changqings/gin-web/handle_func"
+	"github.com/changqings/gin-web/handle"
+
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
@@ -18,7 +19,7 @@ var (
 func TxMetrics(app *gin.Engine) {
 	metricsGroup := app.Group("/metrics")
 	// metrics usage
-	cm := &handle_func.ClbMetrics{
+	cm := &handle.ClbMetrics{
 		ID:          "lb-xxx",
 		Port:        "443",
 		Protocol:    "tcp",
@@ -48,6 +49,6 @@ func TxMetrics(app *gin.Engine) {
 
 	// watching, every 60s update value
 	go cm.WatchMetricsValue()
-	metricsGroup.GET("/tx_clb", handle_func.AdaptHttpHandler(promhttp.Handler()))
+	metricsGroup.GET("/tx_clb", handle.AdaptHttpHandler(promhttp.Handler()))
 
 }

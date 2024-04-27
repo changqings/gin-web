@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
-	"github.com/changqings/gin-web/handle_func"
-	"github.com/changqings/gin-web/routers"
+	"github.com/changqings/gin-web/handle"
+	"github.com/changqings/gin-web/router"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -26,8 +26,8 @@ func main() {
 	// middle.QuerySpendTime())
 
 	// simple mothed usage
-	app.GET("/getname", handle_func.GetName("scq"))
-	app.GET("/json", handle_func.P_list())
+	app.GET("/getname", handle.GetName("scq"))
+	app.GET("/json", handle.P_list())
 
 	// security usage
 	{
@@ -35,7 +35,8 @@ func main() {
 		sec_group.Use(gin.BasicAuth(gin.Accounts{
 			"user01": "PasSw0rd!",
 		}))
-		sec_group.GET("/info", handle_func.Some_sec_info())
+
+		sec_group.GET("/info", handle.Some_sec_info())
 	}
 
 	// metrics usage
@@ -45,7 +46,7 @@ func main() {
 
 	// pgsql usage
 	{
-		routers.PgRouters(app)
+		router.PgRouters(app)
 	}
 
 	// main run
