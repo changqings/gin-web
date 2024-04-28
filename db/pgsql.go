@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	pg_dsn    = "host=192.168.1.201 port=5432 user=dev password=devdevdev dbname=dev01 sslmode=disable TimeZone=Asia/Shanghai"
+	pg_dsn    = "host=192.168.1.15 port=5432 user=dev password=devdevdev dbname=dev01 sslmode=disable TimeZone=Asia/Shanghai"
 	PG_CLIENT = &gorm.DB{}
 )
 
@@ -37,7 +37,8 @@ type PgClient struct {
 	DB *gorm.DB
 }
 
-func init() {
+// if used, please change Init() to init()
+func Init() {
 	PG_CLIENT = GetPgClient()
 	if err := PG_CLIENT.AutoMigrate(&HomeThing{}); err != nil {
 		slog.Error("auto migrate &HomeThing{}", "msg", err)

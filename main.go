@@ -2,7 +2,9 @@ package main
 
 import (
 	"log"
+	"log/slog"
 
+	"github.com/changqings/gin-web/ci"
 	"github.com/changqings/gin-web/handle"
 	"github.com/changqings/gin-web/router"
 
@@ -10,7 +12,40 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// debug usage
 func main() {
+
+	cgr := ci.NewGitlabRepoClone(
+		"backend",
+		"go-micro",
+		"ssh://git@gitlab.scq.com:522/backend/go-micro.git",
+		"master")
+
+	err := cgr.Do()
+	if err != nil {
+		if err := cgr.Clean(); err != nil {
+			slog.Error("crg clean error:%v", err)
+		}
+		return
+	}
+
+	dockerBuild := ci.NewDockerBuild(
+		cgr.ProjectName,
+		cgr.LocalPath,
+		"Dockerfile",
+		"go",
+		cgr.TagOrBranch,
+		"dev")
+
+	if err := dockerBuild.Do(); err != nil {
+		slog.Error("main docker build", "msg", err)
+		return
+	}
+
+}
+
+func MainBack() {
+	// func main() {
 
 	// gin config
 	gin.SetMode(gin.DebugMode)
