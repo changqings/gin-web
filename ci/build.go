@@ -95,7 +95,7 @@ func NewGitlabRepoClone(group, name, sshAddr, tagOrBrach string) *GitlabRepoClon
 
 func (g *GitlabRepoClone) Clean() error {
 
-	if !strings.Contains(g.LocalPath, "t_") && strings.HasPrefix(g.LocalPath, LOCALPATH_PARATENT_DIR) {
+	if !strings.Contains(g.LocalPath, "t_") || !strings.HasPrefix(g.LocalPath, LOCALPATH_PARATENT_DIR) {
 		return fmt.Errorf("clean dir, check path error: path=%s", g.LocalPath)
 	}
 
