@@ -21,7 +21,7 @@ func main() {
 		"ssh://git@gitlab.scq.com:522/backend/go-micro.git",
 		"master")
 
-	err := cgr.Do()
+	err := cgr.Clone()
 	if err != nil {
 		if err := cgr.Clean(); err != nil {
 			slog.Error("crg clean error:%v", err)
@@ -37,7 +37,7 @@ func main() {
 		cgr.TagOrBranch,
 		"dev")
 
-	if err := dockerBuild.Do(); err != nil {
+	if err := dockerBuild.DoBuild(); err != nil {
 		slog.Error("main docker build", "msg", err)
 		return
 	}

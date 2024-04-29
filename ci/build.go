@@ -1,6 +1,7 @@
 package ci
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -25,6 +26,8 @@ const (
 	TX_TCR_HOST                 = "ccr.ccs.tencentyun.com"
 	TX_TCR_NAMESPACE_DEVOPS_SCQ = "devops_scq"
 	LOCALPATH_PARATENT_DIR      = "/data/build/gitlab/"
+	GITLAB_CICD_REPO_ADDR       = "ssh://git@gitlab.scq.com:522/devops/cicd.git"
+	CICD_REPO_LOCAL_PATH        = "./devops_cicd/"
 )
 
 var (
@@ -55,7 +58,7 @@ type DockerPush struct {
 	RegistryAuth    string
 }
 
-func (d *DockerBuild) Do() error {
+func (d *DockerBuild) DoBuild() error {
 
 	cmd := NewCmd("docker", "build",
 		"-t", TX_TCR_HOST+"/"+TX_TCR_NAMESPACE_DEVOPS_SCQ+"/"+d.ProjectName+":"+d.BuildTAg,
@@ -103,7 +106,7 @@ func (g *GitlabRepoClone) Clean() error {
 	return cmd.Run()
 }
 
-func (g *GitlabRepoClone) Do() error {
+func (g *GitlabRepoClone) Clone() error {
 
 	err := os.MkdirAll(g.LocalPath, 0755)
 	if err != nil {
@@ -111,15 +114,27 @@ func (g *GitlabRepoClone) Do() error {
 		return err
 	}
 
-	cmd := NewCmd("git", "clone",
+	cloneApp := NewCmd(
+		"git", "clone",
 		"-b", g.TagOrBranch,
 		"--depth=1",
 		g.RepoSSH, g.LocalPath)
 
-	// debug cmd
-	fmt.Printf("cmd.String()=%s\n", cmd.String())
+	cloneCICD := NewCmd(
+		"git", "clone",
+		"-b", "main",
+		"--depth=1",
+		GITLAB_CICD_REPO_ADDR, CICD_REPO_LOCAL_PATH,
+	)
 
-	return cmd.Run()
+	cloneCICD.Dir = g.LocalPath
+
+	// debug cmd
+	// fmt.Printf("cmd.String()=%s\n", cloneApp.String())
+
+	errJoin := errors.Join(cloneApp.Run(), cloneCICD.Run())
+
+	return errJoin
 }
 
 // cmd with os.Strerr and os.Stdout
