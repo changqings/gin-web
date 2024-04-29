@@ -16,7 +16,7 @@ import (
 // 过程：代码仓库(gitlab_on_docker) --> 挂载到特定容器(docker local) --> 构建并生成产物(use Dockerfile)
 // --> 构建镜像并上传到镜像仓库(docker-registry)
 
-// gitlab_admin_read_all token=glpat-Arnoz3_yrcDhZyVgYt9j
+
 // gitlab_host = http://192.168.1.15
 
 // ssh://git@gitlab.scq.com:522/devops/go-ws.git
@@ -98,7 +98,7 @@ func NewGitlabRepoClone(group, name, sshAddr, tagOrBrach string) *GitlabRepoClon
 
 func (g *GitlabRepoClone) Clean() error {
 
-	if !strings.Contains(g.LocalPath, "t_") && strings.HasPrefix(g.LocalPath, LOCALPATH_PARATENT_DIR) {
+	if !strings.Contains(g.LocalPath, "t_") || !strings.HasPrefix(g.LocalPath, LOCALPATH_PARATENT_DIR) {
 		return fmt.Errorf("clean dir, check path error: path=%s", g.LocalPath)
 	}
 
