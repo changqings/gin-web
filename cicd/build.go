@@ -135,8 +135,7 @@ func (d *DockerBuild) DoBuild() error {
 	dockerfileNameWithEnv := "Dockerfile_" + d.Env
 
 	// workDir and devops/cicd build config
-	workDir := filepath.Join(d.ProjectLocalPath, d.TimestampNowDir)
-	devopsCICDBuildPath := filepath.Join(workDir, CICD_REPO_LOCAL_PATH, "jobs", d.Group, d.ProjectName, "build")
+	devopsCICDBuildPath := filepath.Join(d.WorkDir, CICD_REPO_LOCAL_PATH, "jobs", d.Group, d.ProjectName, "build")
 
 	// first use devops/cicd build
 	var fss []string
@@ -154,7 +153,7 @@ func (d *DockerBuild) DoBuild() error {
 	} else {
 		// cp all file of build to project localpath
 		for _, f := range fss {
-			copyCmd := NewCmd("cp", "-a", filepath.Join(devopsCICDBuildPath, f), workDir)
+			copyCmd := NewCmd("cp", "-a", filepath.Join(devopsCICDBuildPath, f), d.WorkDir)
 			err := copyCmd.Run()
 			if err != nil {
 				return err
@@ -176,7 +175,7 @@ func (d *DockerBuild) DoBuild() error {
 		"-f", dockerFileName,
 		".",
 	)
-	cmd.Dir = workDir
+	cmd.Dir = d.WorkDir
 
 	return cmd.Run()
 
