@@ -15,7 +15,8 @@ import (
 // debug usage
 func main() {
 
-	config := ci.ConfigCICD{BuildHistoryReserve: 3}
+	// clone
+	config := ci.ConfigCICD{BuildHistoryReserve: 10}
 	cgr := ci.NewGitlabRepoClone(
 		"backend",
 		"go-micro",
@@ -24,21 +25,28 @@ func main() {
 
 	err := cgr.Clone(config)
 	if err != nil {
-		if err := cgr.Clean(); err != nil {
-			slog.Error("crg clean error:%v", err)
-		}
+		slog.Error("main clone", "msg", err)
 		return
 	}
 
-	dockerBuild := ci.NewDockerBuild(
+	//build
+	build := ci.NewDockerBuild(
 		cgr.ProjectName,
 		cgr.ProjecLocaltPath,
 		"go",
 		cgr.TagOrBranch,
 		"dev")
 
-	if err := dockerBuild.DoBuild(cgr); err != nil {
-		slog.Error("main docker build", "msg", err)
+	errBuild := build.DoBuild(cgr)
+	if errBuild != nil {
+		slog.Error("main docker build", "image", build.Image, "msg", errBuild)
+		return
+	}
+
+	// push
+	errPush := build.DoPush()
+	if errPush != nil {
+		slog.Error("main docker push", "image", build.Image, "msg", errBuild)
 		return
 	}
 

@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"slices"
 	"strings"
 	"time"
@@ -22,8 +23,6 @@ import (
 
 var (
 	LayOutSet                   = "20060102150405.000"
-	GITLAB_HTTP_ADDR            = "gitlab.scq.com"
-	GITLAB_SSH_ADDR             = "gitlab.scq.com:522"
 	TX_TCR_HOST                 = "ccr.ccs.tencentyun.com"
 	TX_TCR_NAMESPACE_DEVOPS_SCQ = "devops_scq"
 	LOCALPATH_PARATENT_DIR      = "/data/build/gitlab/"
@@ -48,15 +47,16 @@ type GitlabRepoClone struct {
 type DockerBuild struct {
 	ProjectName      string
 	ProjectLocalPath string
-	buildType        string
-	BuildEnv         string
-	BuildTag         string
+	Type             string
+	Env              string
+	Tag              string
+	Image            string
 }
 
-type DockerPush struct {
-	ProjectName     string
-	RegistryAddress string
-	RegistryAuth    string
+func (d *DockerBuild) DoPush() error {
+
+	pushCmd := NewCmd("docker", "push", d.Image)
+	return pushCmd.Run()
 }
 
 func (d *DockerBuild) DoBuild(g *GitlabRepoClone) error {
@@ -64,17 +64,17 @@ func (d *DockerBuild) DoBuild(g *GitlabRepoClone) error {
 	// Dockerfile define
 	var dockerFileName string
 	dockerfileNameDefault := "Dockerfile"
-	dockerfileNameWithEnv := "Dockerfile_" + d.BuildEnv
+	dockerfileNameWithEnv := "Dockerfile_" + d.Env
 
 	// workDir and devops/cicd build config
-	workDir := g.ProjecLocaltPath + g.TimestampNowDir
-	devopsCICDBuildPath := workDir + "/" + CICD_REPO_LOCAL_PATH + "/jobs/" + g.Group + "/" + d.ProjectName + "/build"
+	workDir := filepath.Join(g.ProjecLocaltPath, g.TimestampNowDir)
+	devopsCICDBuildPath := filepath.Join(workDir, CICD_REPO_LOCAL_PATH, "jobs", g.Group, d.ProjectName, "build")
 
 	// first use devops/cicd build
 	var fss []string
 	files, err := os.ReadDir(devopsCICDBuildPath)
 	if err != nil {
-		slog.Error("read dir", "path", devopsCICDBuildPath, "msg", err)
+		slog.Warn("build use devops/cicd dir", "path", devopsCICDBuildPath, "msg", err)
 	} else {
 		for _, f := range files {
 			fss = append(fss, f.Name())
@@ -86,7 +86,7 @@ func (d *DockerBuild) DoBuild(g *GitlabRepoClone) error {
 	} else {
 		// cp all file of build to project localpath
 		for _, f := range fss {
-			copyCmd := NewCmd("cp", "-a", devopsCICDBuildPath+"/"+f, workDir)
+			copyCmd := NewCmd("cp", "-a", filepath.Join(devopsCICDBuildPath, f), workDir)
 			err := copyCmd.Run()
 			if err != nil {
 				return err
@@ -104,7 +104,7 @@ func (d *DockerBuild) DoBuild(g *GitlabRepoClone) error {
 
 	// run docker build
 	cmd := NewCmd("docker", "build",
-		"-t", TX_TCR_HOST+"/"+TX_TCR_NAMESPACE_DEVOPS_SCQ+"/"+d.ProjectName+":"+d.BuildEnv+"-"+d.BuildTag,
+		"-t", d.Image,
 		"-f", dockerFileName,
 		".",
 	)
@@ -118,18 +118,20 @@ func (d *DockerBuild) DoBuild(g *GitlabRepoClone) error {
 // second use Dockerfile of devops/cicd project.Dokerfile
 // third use Dockerfile of repo.Dockerfile
 func NewDockerBuild(name, path, buildType, buildTag, buildEnv string) *DockerBuild {
+	image := filepath.Join(TX_TCR_HOST, TX_TCR_NAMESPACE_DEVOPS_SCQ, name+":"+buildEnv+"-"+buildTag)
 	return &DockerBuild{
 		ProjectName:      name,
 		ProjectLocalPath: path,
-		buildType:        buildType,
-		BuildEnv:         buildEnv,
-		BuildTag:         buildTag,
+		Type:             buildType,
+		Env:              buildEnv,
+		Tag:              buildTag,
+		Image:            image,
 	}
 }
 
 func NewGitlabRepoClone(group, name, sshAddr, tagOrBrach string) *GitlabRepoClone {
 
-	localPath := LOCALPATH_PARATENT_DIR + group + "/" + name + "/"
+	localPath := filepath.Join(LOCALPATH_PARATENT_DIR, group, name)
 	timeStampStr := time.Now().Local().Format(LayOutSet)
 
 	return &GitlabRepoClone{
@@ -144,22 +146,22 @@ func NewGitlabRepoClone(group, name, sshAddr, tagOrBrach string) *GitlabRepoClon
 
 func (g *GitlabRepoClone) Clean() error {
 
-	path := g.ProjecLocaltPath + g.TimestampNowDir
+	workDir := filepath.Join(g.ProjecLocaltPath + g.TimestampNowDir)
 
-	if !strings.Contains(path, "t_") || !strings.HasPrefix(path, LOCALPATH_PARATENT_DIR) {
-		return fmt.Errorf("clean dir, check path error: path=%s", path)
+	if !strings.Contains(workDir, "t_") || !strings.HasPrefix(workDir, LOCALPATH_PARATENT_DIR) {
+		return fmt.Errorf("clean dir, check path error: path=%s", workDir)
 	}
 
-	cmd := NewCmd("rm", "-rf", path)
+	cmd := NewCmd("rm", "-rf", workDir)
 	return cmd.Run()
 }
 
 func (g *GitlabRepoClone) Clone(c ConfigCICD) error {
-	path := g.ProjecLocaltPath + g.TimestampNowDir
+	workDir := filepath.Join(g.ProjecLocaltPath, g.TimestampNowDir)
 
-	err := os.MkdirAll(path, 0755)
+	err := os.MkdirAll(workDir, 0755)
 	if err != nil {
-		slog.Error("os mkdir all", "path", path, "msg", err)
+		slog.Error("os mkdir all", "path", workDir, "msg", err)
 		return err
 	}
 
@@ -169,10 +171,12 @@ func (g *GitlabRepoClone) Clone(c ConfigCICD) error {
 		return err
 	}
 
-	if len(fss) > c.BuildHistoryReserve {
+	if len(fss) > c.BuildHistoryReserve &&
+		strings.Contains(workDir, "t_") &&
+		strings.HasPrefix(workDir, LOCALPATH_PARATENT_DIR) {
 		//do clean
 		for _, f := range fss[:len(fss)-c.BuildHistoryReserve] {
-			err := os.RemoveAll(g.ProjecLocaltPath + f.Name())
+			err := os.RemoveAll(filepath.Join(g.ProjecLocaltPath, f.Name()))
 			if err != nil {
 				slog.Error("remove dir", "name", f.Name(), "msg", err)
 				continue
@@ -185,16 +189,14 @@ func (g *GitlabRepoClone) Clone(c ConfigCICD) error {
 		"git", "clone",
 		"-b", g.TagOrBranch,
 		"--depth=1",
-		g.RepoSSH, path)
+		g.RepoSSH, workDir)
 
 	cloneCICD := NewCmd(
 		"git", "clone",
 		"-b", "main",
 		"--depth=1",
-		GITLAB_CICD_REPO_ADDR, CICD_REPO_LOCAL_PATH,
+		GITLAB_CICD_REPO_ADDR, filepath.Join(workDir, CICD_REPO_LOCAL_PATH),
 	)
-
-	cloneCICD.Dir = path
 
 	// debug cmd
 	// fmt.Printf("cmd.String()=%s\n", cloneApp.String())
