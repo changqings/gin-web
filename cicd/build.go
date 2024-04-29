@@ -21,12 +21,12 @@ import (
 // ssh://git@gitlab.scq.com:522/devops/go-ws.git
 
 var (
-	LayOutSet                   = "20060102150405.000"
-	TX_TCR_HOST                 = "ccr.ccs.tencentyun.com"
-	TX_TCR_NAMESPACE_DEVOPS_SCQ = "devops_scq"
-	LOCALPATH_PARATENT_DIR      = "/data/build/gitlab/"
-	GITLAB_CICD_REPO_ADDR       = "ssh://git@gitlab.scq.com:522/devops/cicd.git"
-	CICD_REPO_LOCAL_PATH        = "devops_cicd"
+	TimeLayOutSet           = "20060102150405.000"
+	TxTcrHost               = "ccr.ccs.tencentyun.com"
+	TxTcrNamespaceDevopsScq = "devops_scq"
+	LocalpathParentDir      = "/data/build/gitlab/"
+	GitlabCICDRepoAddr      = "ssh://git@gitlab.scq.com:522/devops/cicd.git"
+	CICDRepoLocalPath       = "devops_cicd"
 )
 
 type ConfigCICD struct {
@@ -51,9 +51,9 @@ type DockerBuild struct {
 // second use Dockerfile of devops/cicd project.Dokerfile
 // third use Dockerfile of repo.Dockerfile
 func NewDockerBuild(name, group, sshAddr, buildType, tagOrbranch, buildEnv string) *DockerBuild {
-	image := filepath.Join(TX_TCR_HOST, TX_TCR_NAMESPACE_DEVOPS_SCQ, name+":"+buildEnv+"-"+tagOrbranch)
-	localPath := filepath.Join(LOCALPATH_PARATENT_DIR, group, name)
-	timeStampStr := "t_" + time.Now().Local().Format(LayOutSet)
+	image := filepath.Join(TxTcrHost, TxTcrNamespaceDevopsScq, name+":"+buildEnv+"-"+tagOrbranch)
+	localPath := filepath.Join(LocalpathParentDir, group, name)
+	timeStampStr := "t_" + time.Now().Local().Format(TimeLayOutSet)
 	workDir := filepath.Join(localPath, timeStampStr)
 
 	return &DockerBuild{
@@ -87,7 +87,7 @@ func (d *DockerBuild) DoClone(c ConfigCICD) error {
 
 	if len(fss) > c.BuildHistoryReserve &&
 		strings.Contains(d.WorkDir, "t_") &&
-		strings.HasPrefix(d.WorkDir, LOCALPATH_PARATENT_DIR) {
+		strings.HasPrefix(d.WorkDir, LocalpathParentDir) {
 		//do clean
 		for _, f := range fss[:len(fss)-c.BuildHistoryReserve] {
 			err := os.RemoveAll(filepath.Join(d.ProjectLocalPath, f.Name()))
@@ -109,7 +109,7 @@ func (d *DockerBuild) DoClone(c ConfigCICD) error {
 		"git", "clone",
 		"-b", "main",
 		"--depth=1",
-		GITLAB_CICD_REPO_ADDR, filepath.Join(d.WorkDir, CICD_REPO_LOCAL_PATH),
+		GitlabCICDRepoAddr, filepath.Join(d.WorkDir, CICDRepoLocalPath),
 	)
 
 	// debug cmd
@@ -135,7 +135,7 @@ func (d *DockerBuild) DoBuild() error {
 	dockerfileNameWithEnv := "Dockerfile_" + d.Env
 
 	// workDir and devops/cicd build config
-	devopsCICDBuildPath := filepath.Join(d.WorkDir, CICD_REPO_LOCAL_PATH, "jobs", d.Group, d.ProjectName, "build")
+	devopsCICDBuildPath := filepath.Join(d.WorkDir, CICDRepoLocalPath, "jobs", d.Group, d.ProjectName, "build")
 
 	// first use devops/cicd build
 	var fss []string
