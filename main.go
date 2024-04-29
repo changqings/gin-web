@@ -4,7 +4,7 @@ import (
 	"log"
 	"log/slog"
 
-	"github.com/changqings/gin-web/ci"
+	"github.com/changqings/gin-web/cicd"
 	"github.com/changqings/gin-web/handle"
 	"github.com/changqings/gin-web/router"
 
@@ -16,28 +16,20 @@ import (
 func main() {
 
 	// clone
-	config := ci.ConfigCICD{BuildHistoryReserve: 10}
-	cgr := ci.NewGitlabRepoClone(
-		"backend",
-		"go-micro",
+	config := cicd.ConfigCICD{BuildHistoryReserve: 10}
+	// new build
+	build := cicd.NewDockerBuild(
+		"go-micro", "backend",
 		"ssh://git@gitlab.scq.com:522/backend/go-micro.git",
-		"master")
+		"go", "master", "dev")
 
-	err := cgr.Clone(config)
-	if err != nil {
-		slog.Error("main clone", "msg", err)
+	errClone := build.DoClone(config)
+	if errClone != nil {
+		slog.Error("main build clone", "git_repo", build.RepoSSH, "msg", errClone)
 		return
 	}
 
-	//build
-	build := ci.NewDockerBuild(
-		cgr.ProjectName,
-		cgr.ProjecLocaltPath,
-		"go",
-		cgr.TagOrBranch,
-		"dev")
-
-	errBuild := build.DoBuild(cgr)
+	errBuild := build.DoBuild()
 	if errBuild != nil {
 		slog.Error("main docker build", "image", build.Image, "msg", errBuild)
 		return
