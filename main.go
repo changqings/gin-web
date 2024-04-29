@@ -15,13 +15,14 @@ import (
 // debug usage
 func main() {
 
+	config := ci.ConfigCICD{BuildHistoryReserve: 3}
 	cgr := ci.NewGitlabRepoClone(
 		"backend",
 		"go-micro",
 		"ssh://git@gitlab.scq.com:522/backend/go-micro.git",
 		"master")
 
-	err := cgr.Clone()
+	err := cgr.Clone(config)
 	if err != nil {
 		if err := cgr.Clean(); err != nil {
 			slog.Error("crg clean error:%v", err)
@@ -31,13 +32,12 @@ func main() {
 
 	dockerBuild := ci.NewDockerBuild(
 		cgr.ProjectName,
-		cgr.LocalPath,
-		"Dockerfile",
+		cgr.ProjecLocaltPath,
 		"go",
 		cgr.TagOrBranch,
 		"dev")
 
-	if err := dockerBuild.DoBuild(); err != nil {
+	if err := dockerBuild.DoBuild(cgr); err != nil {
 		slog.Error("main docker build", "msg", err)
 		return
 	}
