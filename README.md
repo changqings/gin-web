@@ -43,3 +43,9 @@ docker run -d --name pg \
   -v /data/pg:/var/lib/postgresql/data \
   postgres:16.2-bookworm
 ```
+
+## ci_cd 简易实现
+- 只考虑了在linux下运行，代码调试系统为ubuntu24.04
+- 流程，clone --> build --> push --> deploy
+- use exec.Command()来封装了`git clone`, `mkdir -p`,`docker build`,
+- and `docker tag`, `docker push`, `kubectl apply -f`
