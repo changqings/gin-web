@@ -6,7 +6,7 @@
 
 ### 请求限流实现
 
-- 使用 time duration 实现，只做时间间隔的限流，如果要使用桶，请自行百度
+- 使用 time duration 实现，只做时间间隔的限流，如果要使用桶，请使用官方限制中间件
 - middle.Limiter(1\*time.Second),这里设置每个请求的时间间隔，小于此间隔，则会被禁止
 
 ### prometheus metrics, value from tencent monitor api

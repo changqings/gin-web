@@ -76,7 +76,7 @@ func (k *K8sDeploy) DoDeploy() error {
 		}
 	}
 
-	// deploy为结构体指针，不能使用nil判断，可以随便取一个结构体字段的值来进行判断是否为空
+	// deploy为结构体指针，不能使用nil判断，可以随便取一个结构体字段的值来进行判断
 	if deploy.Name != "" {
 		slog.Info("DoDeploy update deployment", "namespace", k.Namespace, "name", k.AppName, "msg", "founded, update image...")
 		var appContainerIndex int
