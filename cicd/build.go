@@ -24,7 +24,7 @@ var (
 	TimeLayOutSet           = "20060102150405.000"
 	TxTcrHost               = "ccr.ccs.tencentyun.com"
 	TxTcrNamespaceDevopsScq = "devops_scq"
-	LocalpathParentDir      = "/data/build/gitlab/"
+	LocalBuildBaseDir       = "/data/devops/build/"
 	GitlabCICDRepoAddr      = "ssh://git@gitlab.scq.com:522/devops/cicd.git"
 	CICDRepoLocalPath       = "devops_cicd"
 )
@@ -52,14 +52,14 @@ type DockerBuild struct {
 // third use Dockerfile of repo.Dockerfile
 func NewDockerBuild(name, group, sshAddr, buildType, tagOrbranch, buildEnv string) *DockerBuild {
 	image := filepath.Join(TxTcrHost, TxTcrNamespaceDevopsScq, name+":"+buildEnv+"-"+tagOrbranch)
-	localPath := filepath.Join(LocalpathParentDir, group, name)
+	localPath := filepath.Join(LocalBuildBaseDir, group, name)
 	timeStampStr := "t_" + time.Now().Local().Format(TimeLayOutSet)
 	workDir := filepath.Join(localPath, timeStampStr)
 
 	return &DockerBuild{
 		ProjectName:      name,
 		Group:            group,
-		ProjectLocalPath: localPath,
+		ProjectLocalPath: localPath, // this for delete old clone
 		RepoSSH:          sshAddr,
 		WorkDir:          workDir,
 		Type:             buildType,
@@ -75,7 +75,7 @@ func (d *DockerBuild) DoClone(c ConfigCICD) error {
 
 	err := os.MkdirAll(d.WorkDir, 0755)
 	if err != nil {
-		slog.Error("os mkdir all", "path", d.WorkDir, "msg", err)
+		slog.Error("build mkdir all", "path", d.WorkDir, "msg", err)
 		return err
 	}
 
@@ -87,7 +87,7 @@ func (d *DockerBuild) DoClone(c ConfigCICD) error {
 
 	if len(fss) > c.BuildHistoryReserve &&
 		strings.Contains(d.WorkDir, "t_") &&
-		strings.HasPrefix(d.WorkDir, LocalpathParentDir) {
+		strings.HasPrefix(d.WorkDir, LocalBuildBaseDir) {
 		//do clean
 		for _, f := range fss[:len(fss)-c.BuildHistoryReserve] {
 			err := os.RemoveAll(filepath.Join(d.ProjectLocalPath, f.Name()))

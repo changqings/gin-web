@@ -21,7 +21,7 @@ func main() {
 	build := cicd.NewDockerBuild(
 		"go-micro", "backend",
 		"ssh://git@gitlab.scq.com:522/backend/go-micro.git",
-		"go", "master", "dev")
+		"go", "v0.0.1", "dev")
 
 	errClone := build.DoClone(config)
 	if errClone != nil {
@@ -41,6 +41,19 @@ func main() {
 		slog.Error("main docker push", "image", build.Image, "msg", errBuild)
 		return
 	}
+
+	// deploy
+	deploy := cicd.NewK8sDeploy("go-micro", "backend",
+		"default", "go", "v0.0.1", "dev")
+
+	errDeploy := deploy.DoDeploy()
+	if errDeploy != nil {
+		slog.Error("main k8s deploy", "namespace", deploy.Namespace, "name", deploy.AppName,
+			"env", deploy.Env, "msg", errDeploy)
+		return
+	}
+
+	slog.Info("main func succcessfully end.")
 
 }
 
