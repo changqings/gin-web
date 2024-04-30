@@ -62,7 +62,8 @@ func (k *K8sDeploy) DoDeploy() error {
 		}
 	} else {
 		// not exit
-		slog.Info("create deploy use devops/cicd kustimze", "namespace", k.Namespace, "name", k.AppName)
+		slog.Info("create deploy use devops/cicd kustomize", "namespace", k.Namespace, "name", k.AppName)
+
 	}
 
 	return nil
