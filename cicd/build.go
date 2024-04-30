@@ -1,6 +1,7 @@
 package cicd
 
 import (
+	"errors"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -8,6 +9,8 @@ import (
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 // write this ci_cd just for learn use golang.
@@ -27,6 +30,7 @@ var (
 	LocalBuildBaseDir       = "/data/devops/build/"
 	GitlabCICDRepoAddr      = "ssh://git@gitlab.scq.com:522/devops/cicd.git"
 	CICDRepoLocalPath       = "devops_cicd"
+	buildConfig             = ConfigCICD{BuildHistoryReserve: 10}
 )
 
 type ConfigCICD struct {
@@ -35,22 +39,22 @@ type ConfigCICD struct {
 
 // use ~/.ssh/id_rsa as git repo private key
 type DockerBuild struct {
-	Group            string
-	RepoSSH          string
-	ProjectName      string
-	ProjectLocalPath string
-	TimestampNowDir  string
-	WorkDir          string
-	Type             string
-	Env              string
-	Tag              string
-	Image            string
+	ProjectName      string `json:"project_name"`
+	Group            string `json:"group"`
+	RepoSSH          string `json:"repo_ssh"`
+	ProjectLocalPath string `json:"-"`
+	TimestampNowDir  string `json:"-"`
+	WorkDir          string `json:"-"`
+	Type             string `json:"project_type"`
+	Env              string `json:"project_env"`
+	Tag              string `json:"tag_or_branch"`
+	Image            string `json:"-"`
 }
 
 // first use Dockerfile of devops/cicd project.Dockerfile_<buildEnv>
 // second use Dockerfile of devops/cicd project.Dokerfile
 // third use Dockerfile of repo.Dockerfile
-func NewDockerBuild(name, group, sshAddr, buildType, tagOrbranch, buildEnv string) *DockerBuild {
+func NewDockerBuild(name, group, sshAddr, buildType, buildEnv, tagOrbranch string) *DockerBuild {
 	image := filepath.Join(TxTcrHost, TxTcrNamespaceDevopsScq, name+":"+buildEnv+"-"+tagOrbranch)
 	localPath := filepath.Join(LocalBuildBaseDir, group, name)
 	timeStampStr := "t_" + time.Now().Local().Format(TimeLayOutSet)
@@ -68,6 +72,18 @@ func NewDockerBuild(name, group, sshAddr, buildType, tagOrbranch, buildEnv strin
 		Image:            image,
 		TimestampNowDir:  timeStampStr,
 	}
+}
+
+func (d *DockerBuild) SetAllPath() {
+	image := filepath.Join(TxTcrHost, TxTcrNamespaceDevopsScq, d.ProjectName+":"+d.Env+"-"+d.Tag)
+	localPath := filepath.Join(LocalBuildBaseDir, d.Group, d.ProjectName)
+	timeStampStr := "t_" + time.Now().Local().Format(TimeLayOutSet)
+	workDir := filepath.Join(localPath, timeStampStr)
+
+	d.Image = image
+	d.ProjectLocalPath = localPath
+	d.WorkDir = workDir
+
 }
 
 // clone
@@ -186,6 +202,57 @@ func (d *DockerBuild) DoPush() error {
 
 	pushCmd := NewCmd("docker", "push", d.Image)
 	return pushCmd.Run()
+}
+
+// gin handlerfunc
+
+func (d *DockerBuild) Build() gin.HandlerFunc {
+
+	return func(ctx *gin.Context) {
+		// bind
+		if err := ctx.ShouldBind(&d); err != nil {
+			slog.Error("build bind to &DockerBuild{}", "msg", err)
+			ctx.AbortWithError(482, errors.New("post body json not right for build, please check"))
+			return
+		}
+
+		// setAllPath
+		d.SetAllPath()
+
+		// clone
+		errClone := d.DoClone(buildConfig)
+		if errClone != nil {
+			slog.Error("main build clone", "git_repo", d.RepoSSH, "msg", errClone)
+			ctx.AbortWithError(482, errors.New("clone failed"))
+			return
+		}
+
+		// build
+		errBuild := d.DoBuild()
+		if errBuild != nil {
+			slog.Error("main docker build", "image", d.Image, "msg", errBuild)
+			ctx.AbortWithError(482, errors.New("docker build failed"))
+			return
+		}
+
+		// push
+		errPush := d.DoPush()
+		if errPush != nil {
+			slog.Error("main docker push", "image", d.Image, "msg", errBuild)
+			ctx.AbortWithError(482, errors.New("docker push failed"))
+			return
+		}
+
+		ctx.JSON(200, gin.H{
+			"project_name":  d.ProjectName,
+			"project_group": d.Group,
+			"project_env":   d.Env,
+			"push_image":    d.Image,
+			"msg":           "build and push success.",
+		})
+
+	}
+
 }
 
 // cmd with os.Strerr and os.Stdout

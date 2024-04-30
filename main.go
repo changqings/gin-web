@@ -2,9 +2,7 @@ package main
 
 import (
 	"log"
-	"log/slog"
 
-	"github.com/changqings/gin-web/cicd"
 	"github.com/changqings/gin-web/handle"
 	"github.com/changqings/gin-web/router"
 
@@ -12,53 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// debug usage
 func main() {
-
-	// clone
-	config := cicd.ConfigCICD{BuildHistoryReserve: 10}
-	// new build
-	build := cicd.NewDockerBuild(
-		"go-micro", "backend",
-		"ssh://git@gitlab.scq.com:522/backend/go-micro.git",
-		"go", "v0.0.1", "dev")
-
-	errClone := build.DoClone(config)
-	if errClone != nil {
-		slog.Error("main build clone", "git_repo", build.RepoSSH, "msg", errClone)
-		return
-	}
-
-	errBuild := build.DoBuild()
-	if errBuild != nil {
-		slog.Error("main docker build", "image", build.Image, "msg", errBuild)
-		return
-	}
-
-	// push
-	errPush := build.DoPush()
-	if errPush != nil {
-		slog.Error("main docker push", "image", build.Image, "msg", errBuild)
-		return
-	}
-
-	// deploy
-	deploy := cicd.NewK8sDeploy("go-micro", "backend",
-		"default", "go", "v0.0.1", "dev")
-
-	errDeploy := deploy.DoDeploy()
-	if errDeploy != nil {
-		slog.Error("main k8s deploy", "namespace", deploy.Namespace, "name", deploy.AppName,
-			"env", deploy.Env, "msg", errDeploy)
-		return
-	}
-
-	slog.Info("main func succcessfully end.")
-
-}
-
-func MainBack() {
-	// func main() {
 
 	// gin config
 	gin.SetMode(gin.DebugMode)
@@ -97,8 +49,13 @@ func MainBack() {
 		router.PgRouters(app)
 	}
 
+	// cicd
+	{
+		router.CICDRouter(app)
+	}
+
 	// main run
-	err := app.Run("127.0.0.1:8080")
+	err := app.Run(":8080")
 	if err != nil {
 		log.Fatal(err)
 	}

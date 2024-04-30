@@ -46,6 +46,26 @@ docker run -d --name pg \
 
 ## ci_cd 简易实现
 - 只考虑了在linux下运行，代码调试系统为ubuntu24.04
+- 解耦开发与cicd的强关联，可使用cicd仓库单独由运维管理
 - 流程，clone --> build --> push --> deploy
 - use exec.Command()来封装了`git clone`, `mkdir -p`,`docker build`,
 - and `docker tag`, `docker push`, `kubectl apply -f`
+- 附:devops_cicd仓库目录结构
+```bash
+$ tree
+.
+├── config
+│   ├── build_config.yaml
+│   └── deploy_config.yaml
+├── jobs
+│   └── backend
+│       └── go-micro
+│           ├── build
+│           │   └── Dockerfile
+│           └── deploy
+│               └── dev
+│                   └── deployment.yaml
+└── README.md
+
+8 directories, 5 files
+```
