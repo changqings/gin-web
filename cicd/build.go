@@ -238,7 +238,7 @@ func (d *DockerBuild) Build() gin.HandlerFunc {
 		// push
 		errPush := d.DoPush()
 		if errPush != nil {
-			slog.Error("main docker push", "image", d.Image, "msg", errBuild)
+			slog.Error("main docker push", "image", d.Image, "msg", errPush)
 			ctx.AbortWithError(482, errors.New("docker push failed"))
 			return
 		}
