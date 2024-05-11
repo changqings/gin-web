@@ -18,15 +18,16 @@ func main() {
 	{
 		startCh := make(chan int, 1)
 
-		ticker := time.NewTicker(time.Second * 15)
+		ticker := time.NewTicker(time.Second * 10)
 		if db.ShouldRunAsMaster {
-			startCh <- 1
+			close(startCh)
 		} else {
 			slog.Info("wait to be master...")
 			for range ticker.C {
-				slog.Info("main debug", "shouldRunAsMaster", db.ShouldRunAsMaster)
+				// slog.Info("main debug", "shouldRunAsMaster", db.ShouldRunAsMaster)
 				if db.ShouldRunAsMaster {
-					startCh <- 1
+					close(startCh)
+					// 执行ticker.Stop()并不会关闭通信，只会不继续发送, 要手动退出循环
 					ticker.Stop()
 					break
 				}
