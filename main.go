@@ -26,7 +26,7 @@ func init() {
 			// slog.Info("main debug", "shouldRunAsMaster", db.ShouldRunAsMaster)
 			if db.ShouldRunAsMaster {
 				close(startCh)
-				// 执行ticker.Stop()并不会关闭通信，只会不继续发送, 要手动退出循环
+				// 执行ticker.Stop()并不会关闭通信，只是不继续发送, 要手动退出循环
 				ticker.Stop()
 				break
 			}
