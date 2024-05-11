@@ -13,32 +13,32 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func main() {
-	// first check is master or wait
-	{
-		startCh := make(chan int, 1)
+func init() {
+	// first check as master or wait
+	startCh := make(chan int, 1)
 
-		ticker := time.NewTicker(time.Second * 10)
-		if db.ShouldRunAsMaster {
-			close(startCh)
-		} else {
-			slog.Info("wait to be master...")
-			for range ticker.C {
-				// slog.Info("main debug", "shouldRunAsMaster", db.ShouldRunAsMaster)
-				if db.ShouldRunAsMaster {
-					close(startCh)
-					// 执行ticker.Stop()并不会关闭通信，只会不继续发送, 要手动退出循环
-					ticker.Stop()
-					break
-				}
+	ticker := time.NewTicker(time.Second * 10)
+	if db.ShouldRunAsMaster {
+		close(startCh)
+	} else {
+		slog.Info("waitting to be master...")
+		for range ticker.C {
+			// slog.Info("main debug", "shouldRunAsMaster", db.ShouldRunAsMaster)
+			if db.ShouldRunAsMaster {
+				close(startCh)
+				// 执行ticker.Stop()并不会关闭通信，只会不继续发送, 要手动退出循环
+				ticker.Stop()
+				break
 			}
 		}
-
-		<-startCh
-		slog.Info("run as master...")
-
 	}
 
+	<-startCh
+	slog.Info("running as master...")
+
+}
+
+func main() {
 	// gin config
 	gin.SetMode(gin.DebugMode)
 	app := gin.Default()
