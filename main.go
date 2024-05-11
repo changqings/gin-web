@@ -15,22 +15,27 @@ import (
 
 func main() {
 	// first check is master or wait
-	startCh := make(chan int, 1)
+	{
+		startCh := make(chan int, 1)
 
-	ticker := time.NewTicker(time.Second * 15)
-	if db.ShouldRunAsMaster {
-		startCh <- 1
-	} else {
-		slog.Info("wait to be master...")
-		for range ticker.C {
-			if db.ShouldRunAsMaster {
-				startCh <- 1
+		ticker := time.NewTicker(time.Second * 15)
+		if db.ShouldRunAsMaster {
+			startCh <- 1
+		} else {
+			slog.Info("wait to be master...")
+			for range ticker.C {
+				slog.Info("main debug", "shouldRunAsMaster", db.ShouldRunAsMaster)
+				if db.ShouldRunAsMaster {
+					startCh <- 1
+					ticker.Stop()
+				}
 			}
 		}
-	}
 
-	<-startCh
-	slog.Info("run as master...")
+		<-startCh
+		slog.Info("run as master...")
+
+	}
 
 	// gin config
 	gin.SetMode(gin.DebugMode)

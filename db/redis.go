@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -24,22 +25,21 @@ func init() {
 	r := &RedisLock{}
 	r.New(HighAvailable_key, 0)
 
-	ticker := time.NewTicker(time.Minute)
+	ticker := time.NewTicker(time.Second * 20)
+	updateFunc := func() {
+		// 定期更新key, 否则会自动过期，slave会watch这个key
+		// slave如果发现这个key不存在了，则会获取成为master,并继续更新这个key
+		for range ticker.C {
+			if !r.Updatelock(time.Now().Unix()) {
+				panic("更新redis key失败, 请检查")
+			}
+		}
+	}
 
 	if r.SetLock() {
 		//  run as master
 		ShouldRunAsMaster = true
-		go func() {
-
-			// 定期更新key, 否则会自动过期，slave会watch这个key
-			// slave如果发现这个key不存在了，则会获取成为master,并继续更新这个key
-			for range ticker.C {
-				if !r.Updatelock(time.Now().Unix()) {
-					panic("更新redis key失败, 请检查")
-				}
-			}
-
-		}()
+		go updateFunc()
 	} else {
 		ShouldRunAsMaster = false
 		// watch
@@ -47,6 +47,8 @@ func init() {
 			for range ticker.C {
 				if r.SetLock() {
 					ShouldRunAsMaster = true
+					slog.Info("redis debug", "shouldRunAsMaster", ShouldRunAsMaster)
+					go updateFunc()
 				}
 			}
 
@@ -66,13 +68,14 @@ func (r *RedisLock) New(k string, db_num int) {
 }
 
 func (r *RedisLock) Updatelock(v int64) bool {
-	_, err := r.Client.SetXX(context.Background(), r.Key, v, time.Second*75).Result()
-	return err == nil
+	b, _ := r.Client.SetXX(context.Background(), r.Key, v, time.Second*25).Result()
+	return b
 
 }
 
 func (r *RedisLock) SetLock() bool {
 
-	_, err := r.Client.SetNX(context.Background(), r.Key, r.Value, time.Second*75).Result()
-	return err != redis.Nil
+	b, _ := r.Client.SetNX(context.Background(), r.Key, r.Value, time.Second*25).Result()
+
+	return b
 }
