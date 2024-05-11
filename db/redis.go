@@ -29,17 +29,19 @@ func init() {
 	updateFunc := func() {
 		// 定期更新key, 否则会自动过期，slave会watch这个key
 		// slave如果发现这个key不存在了，则会获取成为master,并继续更新这个key
-		for range ticker.C {
-			if !r.Updatelock(time.Now().Unix()) {
-				panic("更新redis key失败, 请检查")
-			}
+		if !r.Updatelock(time.Now().Unix()) {
+			panic("更新redis key失败, 请检查")
 		}
 	}
 
 	if r.SetLock() {
 		//  run as master
 		ShouldRunAsMaster = true
-		go updateFunc()
+		go func() {
+			for range ticker.C {
+				updateFunc()
+			}
+		}()
 	} else {
 		ShouldRunAsMaster = false
 		// watch
@@ -48,8 +50,11 @@ func init() {
 				if r.SetLock() {
 					ShouldRunAsMaster = true
 					slog.Info("redis debug", "shouldRunAsMaster", ShouldRunAsMaster)
-					go updateFunc()
+					break
 				}
+			}
+			for range ticker.C {
+				updateFunc()
 			}
 
 		}()

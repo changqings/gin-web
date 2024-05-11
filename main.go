@@ -28,6 +28,7 @@ func main() {
 				if db.ShouldRunAsMaster {
 					startCh <- 1
 					ticker.Stop()
+					break
 				}
 			}
 		}
