@@ -20,7 +20,6 @@ func init() {
 	// // first check as master or wait
 	// startCh := make(chan int, 1)
 
-<<<<<<< HEAD
 	// ticker := time.NewTicker(time.Second * 10)
 	// if db.ShouldRunAsMaster {
 	// 	close(startCh)
@@ -48,22 +47,6 @@ func init() {
 	for range stopCh.Done() {
 		slog.Info("get exit signal, good bye.")
 		os.Exit(0)
-=======
-	ticker := time.NewTicker(time.Second * 10)
-	if db.ShouldRunAsMaster {
-		close(startCh)
-	} else {
-		slog.Info("waitting to be master...")
-		for range ticker.C {
-			// slog.Info("main debug", "shouldRunAsMaster", db.ShouldRunAsMaster)
-			if db.ShouldRunAsMaster {
-				close(startCh)
-				// 执行ticker.Stop()并不会关闭通信，只是不继续发送, 要手动退出循环
-				ticker.Stop()
-				break
-			}
-		}
->>>>>>> bf8c3209ae1dcc79397f425fb470b11b6003c48f
 	}
 }
 
