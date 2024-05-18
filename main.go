@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/changqings/gin-web/db"
 	"github.com/changqings/gin-web/handle"
 	"github.com/changqings/gin-web/router"
 
@@ -39,24 +40,26 @@ func init() {
 	// <-startCh
 	// slog.Info("running as master...")
 
-	stopCh, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
-	defer cancel()
+	etcd := db.NewEtcd()
+	etcd.Campaign(backgroundTask)
 
-	go backgroundTask()
-
-	for range stopCh.Done() {
-		slog.Info("get exit signal, good bye.")
-		os.Exit(0)
-	}
 }
 
 func backgroundTask() error {
+	stopCh, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+	defer cancel()
 
 	for {
-		slog.Info("background task running...")
-		time.Sleep(time.Second * 10)
-	}
+		select {
+		case <-stopCh.Done():
+			slog.Info("get exit signal, good bye.")
+			os.Exit(0)
+		default:
+			slog.Info("background task running...")
+			time.Sleep(time.Second * 10)
 
+		}
+	}
 }
 
 func main() {
