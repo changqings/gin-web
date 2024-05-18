@@ -2,6 +2,8 @@ package main
 
 import (
 	"log"
+	"os"
+	"time"
 
 	"github.com/changqings/gin-web/handle"
 	"github.com/changqings/gin-web/router"
@@ -35,11 +37,14 @@ func init() {
 	// slog.Info("running as master...")
 
 	//// lock task
-	// etcd := db.NewEtcd()
+	etcd := db.NewEtcd()
 	// go db.LockTask01(etcd)
 	// go db.LockTask02(etcd)
-	// time.Sleep(time.Second * 5)
-	// os.Exit(0)
+
+	go db.LockTask03(etcd)
+	time.Sleep(time.Second * 10)
+
+	os.Exit(0)
 }
 
 //

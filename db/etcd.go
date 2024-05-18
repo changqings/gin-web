@@ -155,3 +155,18 @@ func LockTask02(e *Etcd) {
 	time.Sleep(time.Second * 2)
 
 }
+
+func LockTask03(e *Etcd) {
+	s := e.NewSession(10)
+	if s == nil {
+		return
+	}
+
+	l := concurrency.NewLocker(s, lock_prefix)
+	l.Lock()
+	defer l.Unlock()
+	slog.Info("get clock")
+	slog.Info("task 03 run")
+	time.Sleep(time.Second * 4)
+	slog.Info("release clock")
+}
