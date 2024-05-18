@@ -45,12 +45,14 @@ docker run -d --name pg \
 ```
 
 ## ci_cd 简易实现
-- 只考虑了在linux下运行，代码调试系统为ubuntu24.04
-- 解耦开发与cicd的强关联，可使用cicd仓库单独由运维管理
+
+- 只考虑了在 linux 下运行，代码调试系统为 ubuntu24.04
+- 解耦开发与 cicd 的强关联，可使用 cicd 仓库单独由运维管理
 - 流程，clone --> build --> push --> deploy
 - use exec.Command()来封装了`git clone`, `mkdir -p`,`docker build`,
 - and `docker tag`, `docker push`, `kubectl apply -f`
-- 附:devops_cicd仓库目录结构
+- 附:devops_cicd 仓库目录结构
+
 ```bash
 $ tree
 .
@@ -68,4 +70,37 @@ $ tree
 └── README.md
 
 8 directories, 5 files
+```
+
+## 使用 etcd 选主
+
+```go
+	// master election
+	etcd := db.NewEtcd()
+	etcd.Campaign(main_func)
+
+```
+
+## 使用 etcd 的分布式锁
+
+```go
+func LockTask01(e *Etcd) {
+
+	s := e.NewSession(4)
+	if s == nil {
+		return
+	}
+	mu := concurrency.NewMutex(s, lock_prefix)
+	defer mu.Unlock(e.Context)
+
+	err := mu.TryLock(e.Context)
+	if err != nil {
+		slog.Error("lock task 01", "msg", err)
+		return
+	}
+	defer mu.Unlock(e.Context)
+
+	slog.Info("task 01 run")
+	time.Sleep(time.Second * 2)
+}
 ```
