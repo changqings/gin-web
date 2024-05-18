@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"log"
 	"log/slog"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
-	"github.com/changqings/gin-web/db"
 	"github.com/changqings/gin-web/handle"
 	"github.com/changqings/gin-web/router"
 
@@ -14,31 +17,50 @@ import (
 )
 
 func init() {
-	// first check as master or wait
-	startCh := make(chan int, 1)
+	// // first check as master or wait
+	// startCh := make(chan int, 1)
 
-	ticker := time.NewTicker(time.Second * 10)
-	if db.ShouldRunAsMaster {
-		close(startCh)
-	} else {
-		slog.Info("waitting to be master...")
-		for range ticker.C {
-			// slog.Info("main debug", "shouldRunAsMaster", db.ShouldRunAsMaster)
-			if db.ShouldRunAsMaster {
-				close(startCh)
-				// 执行ticker.Stop()并不会关闭通信，只会不继续发送, 要手动退出循环
-				ticker.Stop()
-				break
-			}
-		}
+	// ticker := time.NewTicker(time.Second * 10)
+	// if db.ShouldRunAsMaster {
+	// 	close(startCh)
+	// } else {
+	// 	slog.Info("waitting to be master...")
+	// 	for range ticker.C {
+	// 		// slog.Info("main debug", "shouldRunAsMaster", db.ShouldRunAsMaster)
+	// 		if db.ShouldRunAsMaster {
+	// 			close(startCh)
+	// 			// 执行ticker.Stop()并不会关闭通信，只会不继续发送, 要手动退出循环
+	// 			ticker.Stop()
+	// 			break
+	// 		}
+	// 	}
+	// }
+
+	// <-startCh
+	// slog.Info("running as master...")
+
+	stopCh, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+	defer cancel()
+
+	go backgroundTask()
+
+	for range stopCh.Done() {
+		slog.Info("get exit signal, good bye.")
+		os.Exit(0)
 	}
+}
 
-	<-startCh
-	slog.Info("running as master...")
+func backgroundTask() error {
+
+	for {
+		slog.Info("background task running...")
+		time.Sleep(time.Second * 10)
+	}
 
 }
 
 func main() {
+
 	// gin config
 	gin.SetMode(gin.DebugMode)
 	app := gin.Default()

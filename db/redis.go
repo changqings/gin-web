@@ -23,10 +23,10 @@ type RedisLock struct {
 
 // 设置过期时间为25s,而定时更新时间为20s
 // 保证在程序正常运行的情况下，key一直不会过期
-func init() {
+// func init() {
+func init_for_backup() {
 
-	r := &RedisLock{}
-	r.New(HighAvailableKey, 0)
+	r := NewRedisLock(HighAvailableKey, 0)
 
 	ticker := time.NewTicker(time.Second * 20)
 	updateFunc := func() {
@@ -72,14 +72,15 @@ func init() {
 
 }
 
-func (r *RedisLock) New(k string, db_num int) {
-
-	r.Key = k
-	r.Value = time.Now().Unix()
-	r.Client = redis.NewClient(&redis.Options{
-		Addr: REDIS_HOST_PORT,
-		DB:   db_num,
-	})
+func NewRedisLock(k string, db_num int) *RedisLock {
+	return &RedisLock{
+		Key:   k,
+		Value: time.Now().Unix(),
+		Client: redis.NewClient(&redis.Options{
+			Addr: REDIS_HOST_PORT,
+			DB:   db_num,
+		}),
+	}
 }
 
 // 更新使用XX, 即存在key才会更新，否则不更新，只有master才会执行这个函数
