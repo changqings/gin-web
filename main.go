@@ -38,10 +38,9 @@ func init() {
 
 	//// lock task
 	etcd := db.NewEtcd()
-	// go db.LockTask01(etcd)
-	// go db.LockTask02(etcd)
+	go db.LockTask01(etcd)
+	go db.LockTask02(etcd)
 
-	go db.LockTask03(etcd)
 	time.Sleep(time.Second * 10)
 
 	os.Exit(0)
