@@ -1,18 +1,12 @@
 package main
 
 import (
-	"context"
 	"log"
-	"log/slog"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
-	"github.com/changqings/gin-web/db"
 	"github.com/changqings/gin-web/handle"
 	"github.com/changqings/gin-web/router"
 
+	"github.com/changqings/gin-web/db"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -40,75 +34,69 @@ func init() {
 	// <-startCh
 	// slog.Info("running as master...")
 
-	etcd := db.NewEtcd()
-	etcd.Campaign(backgroundTask)
-
+	//// lock task
+	// etcd := db.NewEtcd()
+	// go db.LockTask01(etcd)
+	// go db.LockTask02(etcd)
+	// time.Sleep(time.Second * 5)
+	// os.Exit(0)
 }
 
-func backgroundTask() error {
-	stopCh, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
-	defer cancel()
-
-	for {
-		select {
-		case <-stopCh.Done():
-			slog.Info("get exit signal, good bye.")
-			os.Exit(0)
-		default:
-			slog.Info("background task running...")
-			time.Sleep(time.Second * 10)
-
-		}
-	}
-}
+//
 
 func main() {
 
-	// gin config
-	gin.SetMode(gin.DebugMode)
-	app := gin.Default()
+	main_func := func() {
+		// gin config
+		gin.SetMode(gin.DebugMode)
+		app := gin.Default()
 
-	// middlewares write or find from offical
-	// and you can find some offical on `https://github.com/gin-gonic/contrib`
-	app.Use(cors.Default())
-	// middle.Limiter(1*time.Second),
-	// middle.Middle_01(),
-	// middle.Middle_02(),
-	// middle.Middle_03())
-	// middle.QuerySpendTime())
+		// middlewares write or find from offical
+		// and you can find some offical on `https://github.com/gin-gonic/contrib`
+		app.Use(cors.Default())
+		// middle.Limiter(1*time.Second),
+		// middle.Middle_01(),
+		// middle.Middle_02(),
+		// middle.Middle_03())
+		// middle.QuerySpendTime())
 
-	// simple mothed usage
-	app.GET("/getname", handle.GetName("scq"))
-	app.GET("/json", handle.P_list())
+		// simple mothed usage
+		app.GET("/getname", handle.GetName("scq"))
+		app.GET("/json", handle.P_list())
 
-	// security usage
-	{
-		sec_group := app.Group("/sec")
-		sec_group.Use(gin.BasicAuth(gin.Accounts{
-			"user01": "PasSw0rd!",
-		}))
+		// security usage
+		{
+			sec_group := app.Group("/sec")
+			sec_group.Use(gin.BasicAuth(gin.Accounts{
+				"user01": "PasSw0rd!",
+			}))
 
-		sec_group.GET("/info", handle.Some_sec_info())
+			sec_group.GET("/info", handle.Some_sec_info())
+		}
+
+		// metrics usage
+		// {
+		// 	routers.TxMetrics(app)
+		// }
+
+		// pgsql usage
+		{
+			router.PgRouters(app)
+		}
+
+		// cicd
+		{
+			router.CICDRouter(app)
+		}
+
+		// main run
+		err := app.Run(":8080")
+		if err != nil {
+			log.Fatal(err)
+		}
+
 	}
-
-	// metrics usage
-	// {
-	// 	routers.TxMetrics(app)
-	// }
-
-	// pgsql usage
-	{
-		router.PgRouters(app)
-	}
-
-	// cicd
-	{
-		router.CICDRouter(app)
-	}
-
-	// main run
-	err := app.Run(":8080")
-	if err != nil {
-		log.Fatal(err)
-	}
+	// master election
+	etcd := db.NewEtcd()
+	etcd.Campaign(main_func)
 }
