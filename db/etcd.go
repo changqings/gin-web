@@ -31,6 +31,7 @@ func (e *Etcd) Campaign(f func() error) error {
 	defer s.Close()
 
 	el := concurrency.NewElection(s, election_prefix)
+	slog.Info("waitting to be master...")
 	if err := el.Campaign(e.Context, election_val); err != nil {
 		slog.Error("el campaign", "msg", err)
 		return err
