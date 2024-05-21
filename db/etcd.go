@@ -13,9 +13,9 @@ import (
 )
 
 var (
-	etcd_host_port  = "http://139.199.218.214:2379"
-	etcd_user       = "root"
-	etcd_pass       = "lzwk_ops_0517"
+	etcd_host_port  = "http://x.x.x.x:2379"
+	etcd_user       = "ops_rw"
+	etcd_pass       = "dev_dev_0521"
 	election_prefix = "gin-web-master"
 	election_val    = "master_set"
 
