@@ -1,6 +1,6 @@
 ## gin_web, 使用 gin 实现一些接口调用样例
 
-### 多个中间件串联时
+### 中间件串联
 
 - a -> b -> c, 则执行完 a -> b -> c 的 c.Next()后，再执行 c -> b -> a
 
@@ -9,29 +9,16 @@
 - 使用 time duration 实现，只做时间间隔的限流，如果要使用桶，请使用官方限制中间件
 - middle.Limiter(1\*time.Second),这里设置每个请求的时间间隔，小于此间隔，则会被禁止
 
-### prometheus metrics, value from tencent monitor api
+### prometheus 指标实现 k8s pod 伸缩
 
 - 请求 tencent monitor 的接口，获取数据并生成 prometheus 指标，可以基于此指标进行一些活动，比如`keda`
 - prometheus metrics 使用了 time.Ticker 在后台定期更新，与用户访问就触发访问 tencent api 解耦
 
-## db_sql
+## pgsql 使用
 
 - 使用 init()函数中的 autoMigrate()方法，创建表，并初始化一个\*gorm.DB 连接，可全局使用
 - 使用 struct tag 创建及限制表字段，并继承了 gorm.Model，可以设置的标签值可在官网查询，可以设置外键，主键，非空等
 - 为结构体创建方法，使用指针接收者方法，传递了\*gorm.DB，方便处理 db 请求，通过返回 gin.handlerFunc,以注册到 gin 接口方法
-
-## 代码结构
-
-```yaml
-- db/
-- handle/
-- middle/
-- router/
-./go.mod
-./main.go
-```
-
-## pg run on docker
 
 ```bash
 mkdir -p /data/pg
@@ -72,7 +59,7 @@ $ tree
 8 directories, 5 files
 ```
 
-## 使用 etcd 选主
+## etcd 选主
 
 ```go
 	// master election
@@ -81,7 +68,7 @@ $ tree
 
 ```
 
-## 使用 etcd 的分布式锁
+## etcd 的分布式锁
 
 ```go
 func LockTask01(e *Etcd) {
@@ -103,4 +90,16 @@ func LockTask01(e *Etcd) {
 	slog.Info("task 01 run")
 	time.Sleep(time.Second * 2)
 }
+```
+
+## 代码结构
+
+```yaml
+- cicd/
+- db/
+- handle/
+- middle/
+- router/
+./go.mod
+./main.go
 ```
