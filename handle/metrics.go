@@ -15,29 +15,34 @@ import (
 )
 
 type ClbMetrics struct {
-	ID                string
+	ClbID             string
 	Port              string
 	Protocol          string // TCP/tcp/HTTP/http
-	MetricsName       string
+	MetricsName       string // QCE/LB_PUBLIC or QCE/LB_PRIVATE
 	MontiorNs         string
 	PrometheusMetrics prometheus.Gauge
 	Client            *monitor.Client
-	MonitorGetRequest *monitor.GetMonitorDataRequest
 }
 
-func NewClbMetrics(id, port, protocol, cloudMonitorNs, cloudMonitorMetricsName string) *ClbMetrics {
+func NewClbMetrics(SecretId, secretKey, clbId, port, protocol, cloudMonitorNs, cloudMonitorMetricsName string) *ClbMetrics {
+
+	client, err := setClient(SecretId, secretKey)
+	if err != nil {
+		return nil
+	}
 
 	return &ClbMetrics{
-		ID:          id,
+		ClbID:       clbId,
 		Port:        port,
 		Protocol:    protocol,
 		MetricsName: cloudMonitorMetricsName,
 		MontiorNs:   cloudMonitorNs,
+		Client:      client,
 	}
 
 }
 
-func (cm *ClbMetrics) SetMonitorClientAndRequest(id, key string) error {
+func setClient(id, key string) (*monitor.Client, error) {
 	credential := common.NewCredential(
 		id,  // secretId
 		key, // secredKey
@@ -46,9 +51,12 @@ func (cm *ClbMetrics) SetMonitorClientAndRequest(id, key string) error {
 	cpf.HttpProfile.Endpoint = "monitor.tencentcloudapi.com"
 	client, err := monitor.NewClient(credential, "ap-guangzhou", cpf)
 	if err != nil {
-		return err
+		return client, err
 	}
-	cm.Client = client
+	return client, nil
+}
+
+func (cm *ClbMetrics) getMetricsVaule() (float64, error) {
 
 	// set request
 	request := monitor.NewGetMonitorDataRequest()
@@ -62,7 +70,7 @@ func (cm *ClbMetrics) SetMonitorClientAndRequest(id, key string) error {
 			Dimensions: []*monitor.Dimension{
 				{
 					Name:  common.StringPtr("loadBalancerId"),
-					Value: common.StringPtr(cm.ID),
+					Value: common.StringPtr(cm.ClbID),
 				},
 				{
 					Name:  common.StringPtr("loadBalancerPort"),
@@ -79,17 +87,9 @@ func (cm *ClbMetrics) SetMonitorClientAndRequest(id, key string) error {
 	// time start and period, this two value will lead to the values count to get
 	request.Period = common.Uint64Ptr(60)
 	request.StartTime = common.StringPtr(time.Now().Add(-60 * time.Second).Format(time.RFC3339))
-
 	// request.SpecifyStatistics = common.Int64Ptr(7)
 
-	cm.MonitorGetRequest = request
-
-	return nil
-}
-
-func (cm *ClbMetrics) GetMetricsVaule() (float64, error) {
-
-	res, err := cm.Client.GetMonitorData(cm.MonitorGetRequest)
+	res, err := cm.Client.GetMonitorData(request)
 	if _, ok := err.(*errors.TencentCloudSDKError); ok {
 		fmt.Printf("An API error has returned: %s", err)
 		return -1, err
@@ -106,9 +106,9 @@ func (cm *ClbMetrics) GetMetricsVaule() (float64, error) {
 	return -1, err
 }
 
-func (cm *ClbMetrics) SetMetricsValue() {
+func (cm *ClbMetrics) setMetricsValue() {
 
-	value, err := cm.GetMetricsVaule()
+	value, err := cm.getMetricsVaule()
 	if err != nil {
 		slog.Error("get metrics value", "msg", err, "value", -1)
 		cm.PrometheusMetrics.Set(-1)
@@ -118,13 +118,13 @@ func (cm *ClbMetrics) SetMetricsValue() {
 }
 
 func (cm *ClbMetrics) WatchMetricsValue() {
-	cm.SetMetricsValue()
+	cm.setMetricsValue()
 
 	tk := time.NewTicker(time.Second * time.Duration(60))
 	defer tk.Stop()
 
 	for range tk.C {
-		cm.SetMetricsValue()
+		cm.setMetricsValue()
 	}
 }
 

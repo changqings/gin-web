@@ -1,8 +1,6 @@
 package router
 
 import (
-	"log/slog"
-
 	"github.com/changqings/gin-web/handle"
 
 	"github.com/gin-gonic/gin"
@@ -12,21 +10,27 @@ import (
 )
 
 var (
-	tencent_api_id     = ""
-	tencent_api_secert = ""
+	tencent_api_secret_id  = ""
+	tencent_api_secert_key = ""
+	clb_id                 = "lb-xxx"
+	clb_port               = "443"
+	clb_protocol           = "tcp"
+	clb_metrics_name       = "ClientAccIntraffic"
+	tencent_resources_ns   = "QCE/LB_PUBLIC" // or QCE/LB_PRIVATE
 )
 
 func TxMetrics(app *gin.Engine) {
 	metricsGroup := app.Group("/metrics")
 	// metrics usage
-	cm := &handle.ClbMetrics{
-		ID:          "lb-xxx",
-		Port:        "443",
-		Protocol:    "tcp",
-		MetricsName: "ClientAccIntraffic",
-	}
 
-	///
+	cm := handle.NewClbMetrics(
+		tencent_api_secret_id,
+		tencent_api_secert_key,
+		clb_id, clb_port, clb_protocol,
+		tencent_resources_ns,
+		clb_metrics_name,
+	)
+
 	// set prometehsu gauge
 	cm.PrometheusMetrics = prometheus.NewGauge(
 		prometheus.GaugeOpts{
@@ -34,13 +38,6 @@ func TxMetrics(app *gin.Engine) {
 			Name:      "client_acc_intraffic",
 			Help:      "A gauage of clb in duation of 60s.",
 		})
-
-	// set tecent monitor client and request
-	err := cm.SetMonitorClientAndRequest(tencent_api_id, tencent_api_secert)
-	if err != nil {
-		slog.Error("get monitor client", "msg", err)
-		return
-	}
 
 	// registry prometheus metrics
 	prometheus.Unregister(collectors.NewGoCollector())
