@@ -19,17 +19,20 @@ var (
 	tencent_resources_ns   = "QCE/LB_PUBLIC" // or QCE/LB_PRIVATE
 )
 
-func TxMetrics(app *gin.Engine) {
+func TxMetrics(app *gin.Engine) error {
 	metricsGroup := app.Group("/metrics")
 	// metrics usage
 
-	cm := handle.NewClbMetrics(
+	cm, err := handle.NewClbMetrics(
 		tencent_api_secret_id,
 		tencent_api_secert_key,
 		clb_id, clb_port, clb_protocol,
 		tencent_resources_ns,
 		clb_metrics_name,
 	)
+	if err != nil {
+		return err
+	}
 
 	// set prometehsu gauge
 	cm.PrometheusMetrics = prometheus.NewGauge(
@@ -47,5 +50,6 @@ func TxMetrics(app *gin.Engine) {
 	// watching, every 60s update value
 	go cm.WatchMetricsValue()
 	metricsGroup.GET("/tx_clb", handle.AdaptHttpHandler(promhttp.Handler()))
+	return nil
 
 }

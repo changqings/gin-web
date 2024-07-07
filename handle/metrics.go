@@ -24,11 +24,11 @@ type ClbMetrics struct {
 	Client            *monitor.Client
 }
 
-func NewClbMetrics(SecretId, secretKey, clbId, port, protocol, cloudMonitorNs, cloudMonitorMetricsName string) *ClbMetrics {
+func NewClbMetrics(SecretId, secretKey, clbId, port, protocol, cloudMonitorNs, cloudMonitorMetricsName string) (*ClbMetrics, error) {
 
 	client, err := setClient(SecretId, secretKey)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	return &ClbMetrics{
@@ -38,7 +38,7 @@ func NewClbMetrics(SecretId, secretKey, clbId, port, protocol, cloudMonitorNs, c
 		MetricsName: cloudMonitorMetricsName,
 		MontiorNs:   cloudMonitorNs,
 		Client:      client,
-	}
+	}, nil
 
 }
 

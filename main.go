@@ -80,7 +80,9 @@ func main() {
 
 		// metrics usage
 		// {
-		// 	routers.TxMetrics(app)
+		// 	if err := router.TxMetrics(app); err != nil {
+		// 		log.Fatal(err)
+		// 	}
 		// }
 
 		// pgsql usage
