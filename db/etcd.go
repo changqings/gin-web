@@ -137,7 +137,6 @@ func LockTask01(e *Etcd) {
 		slog.Error("lock task 01", "msg", err)
 		return
 	}
-	defer mu.Unlock(e.Context)
 
 	slog.Info("task 01 run")
 	time.Sleep(time.Second * 2)
