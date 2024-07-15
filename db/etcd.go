@@ -30,6 +30,7 @@ type Etcd struct {
 // master election with auto lease
 // ttl = 10s, and auto lease with 5s
 func (e *Etcd) Campaign(f func()) {
+
 	s, err := concurrency.NewSession(e.Client, concurrency.WithTTL(10))
 	if err != nil {
 		slog.Error("get concurrency session", "msg", err)
@@ -38,13 +39,16 @@ func (e *Etcd) Campaign(f func()) {
 	defer s.Close()
 
 	el := concurrency.NewElection(s, election_prefix)
+
+	// .campaign() will be blocked until get leader
 	slog.Info("waitting to be master...")
 	if err := el.Campaign(e.Context, election_val); err != nil {
 		slog.Error("el campaign", "msg", err)
 		return
 	}
-
 	slog.Info("campaign", "msg", "run as master")
+
+	// this go func() will keep alive the lease, loop with ticker time
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
 		for {
@@ -63,6 +67,7 @@ func (e *Etcd) Campaign(f func()) {
 		}
 	}()
 
+	// do the task func f()
 	f()
 
 }
