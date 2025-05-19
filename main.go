@@ -1,19 +1,20 @@
 package main
 
 import (
+	"flag"
 	"log"
-	"os"
+	"log/slog"
 	"time"
 
-	"github.com/changqings/gin-web/handle"
 	"github.com/changqings/gin-web/router"
 
-	"github.com/changqings/gin-web/db"
+	"github.com/changqings/gin-web/pkg/db"
+	"github.com/changqings/gin-web/pkg/handler"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
-func init() {
+func etcdTask() {
 	// // first check as master or wait
 	// startCh := make(chan int, 1)
 
@@ -42,67 +43,82 @@ func init() {
 	go db.LockTask02(etcd)
 
 	time.Sleep(time.Second * 10)
-
-	os.Exit(0)
+	slog.Info("run etcd task completed", "task01", "lockTask01", "task01", "lockTask02")
 }
 
-//
+var (
+	enableEtcd bool
+)
 
 func main() {
-
-	main_func := func() {
-		// gin config
-		gin.SetMode(gin.DebugMode)
-		app := gin.Default()
-
-		// middlewares write or find from offical
-		// and you can find some offical on `https://github.com/gin-gonic/contrib`
-		app.Use(cors.Default())
-		// middle.Limiter(1*time.Second),
-		// middle.Middle_01(),
-		// middle.Middle_02(),
-		// middle.Middle_03())
-		// middle.QuerySpendTime())
-
-		// simple mothed usage
-		app.GET("/getname", handle.GetName("scq"))
-		app.GET("/json", handle.P_list())
-
-		// security usage
-		{
-			sec_group := app.Group("/sec")
-			sec_group.Use(gin.BasicAuth(gin.Accounts{
-				"user01": "PasSw0rd!",
-			}))
-
-			sec_group.GET("/info", handle.Some_sec_info())
-		}
-
-		// metrics usage
-		// {
-		// 	if err := router.TxMetrics(app); err != nil {
-		// 		log.Fatal(err)
-		// 	}
-		// }
-
-		// pgsql usage
-		{
-			router.PgRouters(app)
-		}
-
-		// cicd
-		{
-			router.CICDRouter(app)
-		}
-
-		// main run
-		err := app.Run(":8080")
-		if err != nil {
-			log.Fatal(err)
-		}
-
+	flag.BoolVar(&enableEtcd, "etcd", false, "enable etcd")
+	flag.Parse()
+	if enableEtcd {
+		etcdTask()
+		// master election
+		etcd := db.NewEtcd()
+		etcd.Campaign(ginWebServer)
+	} else {
+		ginWebServer()
 	}
-	// master election
-	etcd := db.NewEtcd()
-	etcd.Campaign(main_func)
+
+}
+
+func ginWebServer() {
+
+	// gin config
+	gin.SetMode(gin.DebugMode)
+	app := gin.Default()
+
+	// middlewares write or find from offical
+	// and you can find some offical on `https://github.com/gin-gonic/contrib`
+	app.Use(cors.Default())
+	// middle.Limiter(1*time.Second),
+	// middle.Middle_01(),
+	// middle.Middle_02(),
+	// middle.Middle_03())
+	// middle.QuerySpendTime())
+
+	// simple mothed usage
+	app.GET("/getname", handler.GetName("scq"))
+	app.GET("/json", handler.P_list())
+
+	// security usage
+	{
+		sec_group := app.Group("/sec")
+		sec_group.Use(gin.BasicAuth(gin.Accounts{
+			"user01": "PasSw0rd!",
+		}))
+
+		sec_group.GET("/info", handler.Some_sec_info())
+	}
+
+	// metrics usage
+	// {
+	// 	if err := router.TxMetrics(app); err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// }
+
+	// pgsql usage
+	{
+		router.PgRouters(app)
+	}
+
+	// cicd
+	{
+		router.CICDRouter(app)
+	}
+
+	// loadtest
+	{
+		router.LoadtestRouter(app)
+	}
+
+	// main run
+	err := app.Run(":8080")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }

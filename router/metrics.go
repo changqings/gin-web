@@ -1,8 +1,7 @@
 package router
 
 import (
-	"github.com/changqings/gin-web/handle"
-
+	"github.com/changqings/gin-web/pkg/handler"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
@@ -23,7 +22,7 @@ func TxMetrics(app *gin.Engine) error {
 	metricsGroup := app.Group("/metrics")
 	// metrics usage
 
-	cm, err := handle.NewClbMetrics(
+	cm, err := handler.NewClbMetrics(
 		tencent_api_secret_id,
 		tencent_api_secert_key,
 		clb_id, clb_port, clb_protocol,
@@ -49,7 +48,7 @@ func TxMetrics(app *gin.Engine) error {
 
 	// watching, every 60s update value
 	go cm.WatchMetricsValue()
-	metricsGroup.GET("/tx_clb", handle.AdaptHttpHandler(promhttp.Handler()))
+	metricsGroup.GET("/tx_clb", handler.AdaptHttpHandler(promhttp.Handler()))
 	return nil
 
 }
