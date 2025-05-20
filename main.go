@@ -8,8 +8,8 @@ import (
 
 	"github.com/changqings/gin-web/router"
 
+	"github.com/changqings/gin-web/pkg/clbmetrics"
 	"github.com/changqings/gin-web/pkg/db"
-	"github.com/changqings/gin-web/pkg/handler"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -73,15 +73,15 @@ func ginWebServer() {
 	// middlewares write or find from offical
 	// and you can find some offical on `https://github.com/gin-gonic/contrib`
 	app.Use(cors.Default())
-	// middle.Limiter(1*time.Second),
-	// middle.Middle_01(),
-	// middle.Middle_02(),
-	// middle.Middle_03())
-	// middle.QuerySpendTime())
+	// middleware.Limiter(1*time.Second),
+	// middleware.Middle_01(),
+	// middleeare.Middle_02(),
+	// middleware.Middle_03())
+	// middleware.QuerySpendTime())
 
 	// simple mothed usage
-	app.GET("/getname", handler.GetName("scq"))
-	app.GET("/json", handler.P_list())
+	app.GET("/getname", clbmetrics.GetName("scq"))
+	app.GET("/json", clbmetrics.P_list())
 
 	// security usage
 	{
@@ -90,7 +90,7 @@ func ginWebServer() {
 			"user01": "PasSw0rd!",
 		}))
 
-		sec_group.GET("/info", handler.Some_sec_info())
+		sec_group.GET("/info", clbmetrics.Some_sec_info())
 	}
 
 	// metrics usage

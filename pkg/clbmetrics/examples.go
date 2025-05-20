@@ -1,4 +1,4 @@
-package handler
+package clbmetrics
 
 import (
 	"net/http"

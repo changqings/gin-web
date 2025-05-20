@@ -1,4 +1,4 @@
-package handler
+package clbmetrics
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ type ClbMetrics struct {
 	Client            *monitor.Client
 }
 
-func NewClbMetrics(SecretId, secretKey, clbId, port, protocol, cloudMonitorNs, cloudMonitorMetricsName string) (*ClbMetrics, error) {
+func New(SecretId, secretKey, clbId, port, protocol, cloudMonitorNs, cloudMonitorMetricsName string) (*ClbMetrics, error) {
 
 	client, err := setClient(SecretId, secretKey)
 	if err != nil {
