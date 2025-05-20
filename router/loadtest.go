@@ -1,7 +1,7 @@
 package router
 
 import (
-	"github.com/changqings/gin-web/pkg/loadtest"
+	"github.com/changqings/gin-web/handler/loadtest"
 	"github.com/gin-gonic/gin"
 )
 

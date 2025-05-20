@@ -1,7 +1,7 @@
 package router
 
 import (
-	"github.com/changqings/gin-web/pkg/db"
+	"github.com/changqings/gin-web/handler/db"
 	"github.com/gin-gonic/gin"
 )
 

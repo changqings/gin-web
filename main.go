@@ -8,8 +8,8 @@ import (
 
 	"github.com/changqings/gin-web/router"
 
-	"github.com/changqings/gin-web/pkg/clbmetrics"
-	"github.com/changqings/gin-web/pkg/db"
+	"github.com/changqings/gin-web/handler/clbmetrics"
+	"github.com/changqings/gin-web/handler/db"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )

@@ -1,7 +1,7 @@
 package router
 
 import (
-	"github.com/changqings/gin-web/pkg/clbmetrics"
+	"github.com/changqings/gin-web/handler/clbmetrics"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
